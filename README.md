@@ -1,5 +1,8 @@
 # ProGlove Streams
 
+[![Build Status](https://travis-ci.com/workaroundgmbh/proglove_streams_api_reference.svg?branch=master)](https://travis-ci.com/workaroundgmbh/proglove_streams_api_reference)
+[![Coverage Status](https://coveralls.io/repos/github/workaroundgmbh/proglove_streams_api_reference/badge.svg?branch=master)](https://coveralls.io/github/workaroundgmbh/proglove_streams_api_reference?branch=master)
+
 ProGlove Streams API reference implementation in Python.
 
 # API documentation
