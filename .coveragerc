@@ -1,0 +1,11 @@
+[run]
+branch = True
+omit =
+  proglove_streams/__main__.py
+  proglove_streams/app_example.py
+  proglove_streams/tests/*
+
+source = ./proglove_streams
+
+[report]
+ignore_errors = True
