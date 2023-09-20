@@ -1,5 +1,13 @@
 .PHONY: all lint test cover
 
+install-tools:
+	python3 -m pip install poetry==1.6.1
+
+install-deps: install-tools
+	poetry install
+
+init: install-tools install-deps
+
 all: lint test cover
 
 cover: test
@@ -23,4 +31,4 @@ lint_types:
 	poetry run mypy --fast-module-lookup  proglove_streams
 
 run:
-	poetry run python3 -m proglove_streams
+	poetry run python3 -m proglove_streams -x
