@@ -5,34 +5,36 @@
 
 ProGlove Streams API reference implementation in Python.
 
-# API documentation
+## API documentation
 
-https://developers.proglove.com/gateway/latest/StreamAPI.html
+<https://docs.proglove.com/en/streams-api.html>
 
-# Requirements
+## Requirements
 
-  - Python >= 3.8
-  - Pipenv
+- Python >= 3.9
 
-# Install dependencies
+## Install dependencies
 
-Install Python 3.8 on you machine
-In a terminal (or command prompt) install `pipenv`
+Install Python 3.9 on your machine
+In a terminal (or command prompt) install and initialize the project
 
-    python -m pip install pipenv
+    make init
 
-Install the package requirements
+This will also install the package requirements. To do this separately, run
+  
+    make install-deps
 
-    python -m pipenv sync
-
-# Run the sample application
+## Run the sample application
 
 To run the sample application you can simply type
 
-    python -m pipenv run python -m proglove_streams PORT
+    make run
 
-With `PORT` being the serial port path attached to the Gateway (e.g.
-`/dev/ttyACM0`, `COM1`)
+which is equivalent to:
+  
+    poetry run python3 -m proglove_streams
+
+Optionally, there is the possibility to specify the path to the serial port by appending `-p PORT` to the above command where `PORT` represents the serial port path attached to the Gateway (e.g. `/dev/ttyACM0`, `COM1`). This defaults to `COM1` on Windows and `/dev/ttyACM0` on Linux.
 
 Once connected to the serial device the application runs forever until a
 Ctrl-C keyboard event is received.
@@ -40,17 +42,15 @@ Ctrl-C keyboard event is received.
 ## Application command line arguments
 
   ```
-  usage: proglove_streams [-h] [-L LEVEL] [-b VALUE] PORT
+usage: proglove_streams [-h] [-L LEVEL] [-b VALUE] [-p PORT]
 
-  positional arguments:
-    PORT                  path to the serial device port (e.g. COM1, /dev/ttyACM0)
-
-  optional arguments:
-    -h, --help            show this help message and exit
-    -L LEVEL, --logging-level LEVEL
-                          set the logging level (default is DEBUG)
-    -b VALUE, --baudrate VALUE
-                          use a specific baudarate (default is 115200)
+optional arguments:
+  -h, --help            show this help message and exit
+  -L LEVEL, --logging-level LEVEL
+                        set the logging level (default is DEBUG)
+  -b VALUE, --baudrate VALUE
+                        use a specific baudarate (default is 115200)
+  -p PORT, --port PORT  path to the serial device port (e.g. COM1, /dev/ttyACM0). Defaults to /dev/ttyACM0 on Linux and COM1 on Windows.
   ```
 
 ### Baudrate
@@ -67,77 +67,73 @@ Once a scanner is connected to the Gateway a `scanner_state` event
 will be received. You can now scan a barcode containing one of the
 following text:
 
-  - `DISPLAY` to tell the sample app to send a display command to a Mark
+- `DISPLAY` to tell the sample app to send a display command to a Mark
   Display
 
   ![](qrcodes/display.png)
 
-  - `BLOCK` to block the single press trigger for 3 seconds
+- `BLOCK` to block the single press trigger for 3 seconds
 
   ![](qrcodes/block.png)
 
-  - `UNBLOCK` to unblock the trigger
+- `UNBLOCK` to unblock the trigger
 
   ![](qrcodes/unblock.png)
 
-  - `FEEDBACK_OK` to play a positive feedback on the Mark device
+- `FEEDBACK_OK` to play a positive feedback on the Mark device
 
   ![](qrcodes/feedback_ok.png)
 
-  - `FEEDBACK_NOK` to play a negative feedback on the Mark device
+- `FEEDBACK_NOK` to play a negative feedback on the Mark device
 
   ![](qrcodes/feedback_nok.png)
 
-  - `STATE` to get the Gateway state
+- `STATE` to get the Gateway state
 
   ![](qrcodes/state.png)
 
-# Develop your own application
+## Develop your own application
 
 This project includes a sample application in `app_example.py` which uses
 the two main classes:
 
-  - `Gateway` the main client used to communicate with the serial port of a
+- `Gateway` the main client used to communicate with the serial port of a
   Gateway.
-  - `GatewayMessageHandler` the Streams API handler that will parse a received
+- `GatewayMessageHandler` the Streams API handler that will parse a received
   JSON message and call the proper application callback.
 
 ## Callbacks
 
 The `GatewayMessageHandler` class implements the following callbacks:
 
-  - `on_scan` called when a Mark scan event is received
-  - `on_scanner_connected` called when a Mark is connected to the Gateway
-  - `on_scanner_disconnected` called when a Mark is disconnected from the Gateway
-  - `on_error` called when a Streams API error event is received
-  - `on_gateway_state_event` called when a Gateway State Event is received
-  - `on_button_pressed` called when a Mark button press is received
+- `on_scan` called when a Mark scan event is received
+- `on_scanner_connected` called when a Mark is connected to the Gateway
+- `on_scanner_disconnected` called when a Mark is disconnected from the Gateway
+- `on_error` called when a Streams API error event is received
+- `on_gateway_state_event` called when a Gateway State Event is received
+- `on_button_pressed` called when a Mark button press is received
 
 ## Commands
 
 The `Gateway` client can send commands to the connected Gateway with
 the following methods:
 
-  - `get_gateway_state` to get the Gateway state (the
+- `get_gateway_state` to get the Gateway state (the
   `on_gateway_state_event` will be called on a successful event
   received from the Gateway)
-  - `send_feedback` to send a visual feedback to a connected Mark
-  - `set_display` to display something on the Mark Display
-  - `set_trigger_block` to block the trigger of a connected Mark
+- `send_feedback` to send a visual feedback to a connected Mark
+- `set_display` to display something on the Mark Display
+- `set_trigger_block` to block the trigger of a connected Mark
 
 ## Models
 
-All Streams API events are modelised using the [Marshmallow
-package](https://marshmallow.readthedocs.io/en/stable/).  You can find
-them in the `models` folder.
+All Streams API events are based on the streams API library models as defined internally by the ProGlove Development Team. These models can be found [here](https://dl.cloudsmith.io/rOwxaCA5uRoiGzOs/proglove/python-packages/python/simple/).
 
-# End User License Agreement
-
-# Copyright
+## Copyright
 
 (c) Workaround GmbH 2021
 
-# End User License Agreement
+## End User License Agreement
 
 End User License Agreement ProGlove Streams Software
 
