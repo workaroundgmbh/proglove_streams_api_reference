@@ -1,24 +1,16 @@
 """Streams API handler protocol."""
-from typing import Optional, Callable, Dict, Any
 from dataclasses import dataclass
+from typing import Any, Callable, Dict, Optional
+
+from streams_api.customer_integrations.button_pressed.model import ButtonPressedStream
+from streams_api.customer_integrations.errors.model import ErrorsStream
+from streams_api.customer_integrations.gateway_state_event.model import (
+    GatewayStateEventStream,
+)
+from streams_api.customer_integrations.scan.model import ScanStream
+from streams_api.customer_integrations.scanner_state.model import ScannerStateStream
 
 from proglove_streams.client import Client
-
-from proglove_streams.models.error import (
-    ErrorEvent
-)
-from proglove_streams.models.gateway_state import (
-    GatewayStateEvent,
-)
-from proglove_streams.models.scan import (
-    ScanEvent
-)
-from proglove_streams.models.scanner_state import (
-    ScannerStateEvent
-)
-from proglove_streams.models.button_pressed import (
-    ButtonPressedEvent
-)
 
 
 @dataclass
@@ -29,24 +21,17 @@ class Handler:
     through callbacks.
 
     """
-    on_scan: Optional[
-        Callable[[Client, ScanEvent], None]
-    ] = None
-    on_scanner_connected: Optional[
-        Callable[[Client, ScannerStateEvent], None]
-    ] = None
-    on_scanner_disconnected: Optional[
-        Callable[[Client, ScannerStateEvent], None]
-    ] = None
-    on_error: Optional[
-        Callable[[Client, ErrorEvent], None]
-    ] = None
-    on_gateway_state_event: Optional[
-        Callable[[Client, GatewayStateEvent], None]
-    ] = None
-    on_button_pressed: Optional[
-        Callable[[Client, ButtonPressedEvent], None]
-    ] = None
 
-    def handle(self, _client: Client, _event: Dict[str, Any]):
+    on_scan: Optional[Callable[[Client, ScanStream], None]] = None
+    on_scanner_connected: Optional[Callable[[Client, ScannerStateStream], None]] = None
+    on_scanner_disconnected: Optional[
+        Callable[[Client, ScannerStateStream], None]
+    ] = None
+    on_error: Optional[Callable[[Client, ErrorsStream], None]] = None
+    on_gateway_state_event: Optional[
+        Callable[[Client, GatewayStateEventStream], None]
+    ] = None
+    on_button_pressed: Optional[Callable[[Client, ButtonPressedStream], None]] = None
+
+    def handle(self, _client: Client, _event: Dict[str, Any]) -> None:
         """Handle the events."""
