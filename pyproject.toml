@@ -1,0 +1,118 @@
+[tool.bandit]
+exclude_dirs = [
+    "proglove_streams/tests",
+]
+
+[tool.black]
+line_length = 88
+target-version = ['py39']
+
+[tool.coverage.run]
+branch = true
+omit = [
+    "proglove_streams/__main__.py",
+    "proglove_streams/app.py",
+]
+
+source = [
+    "proglove_streams",
+]
+
+[tool.coverage.report]
+ignore_errors = true
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+exclude = [
+    '/tests/'
+]
+
+cache_dir = ".cache/mypy"
+
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_decorators = true
+
+[[tool.mypy.overrides]]
+module = [
+    "hexdump.*",
+    "python_json_config.*",
+    "serial.*",
+    "smbus2.*",
+    "pyqrcode.*",
+    "aioserial.*",
+    "jsonschema.*",
+    "qrcode.*",
+    "google.protobuf.*",
+    "paho.mqtt.client.*",
+    "streams_api.*",
+    "streams_api.insight_eventingestion.*",
+    "streams_api.customer_integrations.*",
+]
+
+ignore_missing_imports = true
+
+[tool.ruff]
+exclude = ["proglove_streams/tests"]
+ignore = ["E741"]
+
+
+
+[tool.poetry]
+name = "proglove-streams-api-reference"
+version = "0.1.0"
+description = "Reference application for using streams API over CDC"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+packages = [{include = "proglove_streams"}]
+
+[[tool.poetry.source]]
+name = "proglove_python"
+url = "https://dl.cloudsmith.io/rOwxaCA5uRoiGzOs/proglove/python-packages/python/simple/"
+priority = "primary"
+
+[[tool.poetry.source]]
+name = "PyPI"
+priority = "primary"
+
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pyserial       = "*"
+colorlog       = "*"
+marshmallow    = "*"
+colorama = "*"
+streams-api-customer-distro        = "^3"
+
+[tool.poetry.dev-dependencies]
+bandit            = "*"
+toml              = "*"
+flake8-docstrings = "*"
+jsonschema        = "*"
+pydocstyle        = "*"
+pytest            = "*"
+pytest-asyncio    = "*"
+asynctest         = "*"
+mypy              = "*"
+fire              = "*"
+coveralls         = "*"
+black             = "*"
+autoflake = "*"
+ruff = "*"
+isort = "*"
+pre-commit = "^3"
+pydantic = "1.10.*"
+
+[tool.pytest.ini_options]
+cache_dir = ".cache/pytest"
+asyncio_mode = "auto"
+log_cli_level = "DEBUG"
+log_cli = false
+pythonpath = "."
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
