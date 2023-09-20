@@ -4,38 +4,22 @@ git:
   submodules: false
 language: python
 python:
-  - "3.8"
-cache:
-  directories:
-    - "$HOME/.pipenvcache"
+  - "3.9"
+
 addons:
   apt:
     packages:
-      - python3-pip
-
-env:
-  global:
-    - PIPENV_IGNORE_VIRTUALENVS=1
-    - PIP_CACHE_DIR="$HOME/.pipenvcache/pip"
-    - PIPENV_CACHE_DIR="$HOME/.pipenvcache/pipenv"
-    - WORKON_HOME="${HOME}/.pipenvcache/venv"
-
-before_install:
-  - set -e
-
-install:
-  - set -e
-  - pip install -U pip
-  - pip install pipenv
-  - pip install wheel
-  - pipenv sync --dev
+      - console-data
+      - cppcheck
+      - libsystemd-dev
 
 script:
   - set -e
-  - make all
+  - scripts/install_python_dependencies.sh
+  - make
 
 after_success:
-  - pipenv run coveralls
+  - poetry run coveralls
 
 before_deploy:
   - pip install cloudsmith-cli

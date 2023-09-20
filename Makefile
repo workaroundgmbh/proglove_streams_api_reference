@@ -1,28 +1,26 @@
-.PHONY: all cover lint test
+.PHONY: all lint test cover
 
 all: lint test cover
 
-pip_install: Pipfile.lock
-pip_update:
-	pipenv update --dev > /dev/null
-Pipfile.lock: Pipfile
-	pipenv install --dev > /dev/null
-
 cover: test
-	pipenv run coverage html
-	pipenv run coverage report
+	poetry run coverage html
+	poetry run coverage report
 
-test: pip_install test_only
+test: test_only
 test_only:
-	pipenv run coverage run -m pytest -v
+	poetry run coverage run -m pytest -vv
 
-lint: pip_install lint_only lint_types
+format: 
+	poetry run black proglove_streams
+	poetry run isort proglove_streams
+	poetry run autoflake --quiet --recursive --remove-duplicate-keys --remove-all-unused-imports --remove-unused-variables proglove_streams
+
+lint: lint_only lint_types
 lint_only:
-	pipenv run flake8 proglove_streams
-	pipenv run pylint --rcfile=.pylintrc proglove_streams
-	pipenv run bandit --quiet --recursive  --exclude proglove_streams/tests proglove_streams
+	poetry run ruff check --fix proglove_streams
+	poetry run bandit --quiet --recursive  --exclude proglove_streams/tests -c pyproject.toml proglove_streams
 lint_types:
-	pipenv run mypy --config-file=.mypy.ini proglove_streams
+	poetry run mypy --fast-module-lookup  proglove_streams
 
 run:
-	pipenv run python3 -m proglove_streams
+	poetry run python3 -m proglove_streams
