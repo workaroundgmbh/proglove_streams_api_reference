@@ -1,45 +1,27 @@
 """Test for the Gateway module."""
-import os
-import logging
-import pty
-import uuid
 import json
+import logging
+import os
+import pty
 import time
-from unittest.mock import Mock, patch
+import uuid
 from threading import Event
 from typing import Any, Dict
+from unittest.mock import Mock, patch
 
 import pytest
+from pydantic import BaseModel
+from streams_api.customer_integrations.button_pressed.model import ButtonPressedStream
+from streams_api.customer_integrations.errors.model import ErrorsStream
+from streams_api.customer_integrations.gateway_state_event.model import (
+    DeviceConnectedListItem,
+    GatewayStateEventStream,
+)
+from streams_api.customer_integrations.scan.model import DeviceModel, ScanStream
+from streams_api.customer_integrations.scanner_state.model import ScannerStateStream
 
-from proglove_streams.models.event_type import EventType
-from proglove_streams.models.event import (
-    StreamsAPIEventSchema,
-    StreamsAPIEvent
-)
-from proglove_streams.models.scanner_state import (
-    ScannerStateEvent,
-    ScannerStateEventSchema)
-from proglove_streams.models.gateway_state import (
-    GatewayStateEvent,
-    GatewayStateEventSchema,
-    GatewayStateDeviceConnectedEvent,
-)
-from proglove_streams.models.button_pressed import (
-    ButtonPressedEvent,
-    ButtonPressedSchema
-)
-from proglove_streams.models.error import (
-    ErrorEventSchema,
-    ErrorEvent
-)
-from proglove_streams.models.scan import (
-    ScanEventSchema,
-    ScanEvent
-)
-
-from proglove_streams.gateway import Gateway, GatewayMessageHandler
 from proglove_streams.exception import ProgloveStreamsException
-
+from proglove_streams.gateway import Gateway, GatewayMessageHandler
 
 logger = logging.getLogger(__name__)
 
@@ -55,101 +37,96 @@ class _SideEffect:
 
 
 @pytest.mark.parametrize(
-    "model, schema, callback_name, use_mock",
+    "model, callback_name, use_mock",
     [
-        pytest.param(args[0], args[1], args[2], use_mock, id=args[3])
+        pytest.param(args[0], args[1], use_mock, id=args[2])
         for use_mock in (True, False)
         for args in (
             (
-                    ButtonPressedEvent(
-                        api_version='1.0',
-                        event_type=EventType.BUTTON_PRESSED.value,
-                        event_id=str(uuid.uuid4()),
-                        time_created=int(time.time() * 1000),
-                        gateway_serial='PGGW000000042',
-                        device_serial='123456789',
-                        trigger_gesture='TRIGGER_DOUBLE_CLICK'
-                    ),
-                    ButtonPressedSchema(),
-                    'on_button_pressed',
-                    'button_pressed',
-            ), (
-                    GatewayStateEvent(
-                        api_version='1.0',
-                        event_type=EventType.GATEWAY_STATE.value,
-                        event_id=str(uuid.uuid4()),
-                        time_created=int(time.time() * 1000),
-                        gateway_app_version='1.2.3',
-                        gateway_serial='PGGW000000042',
-                        device_connected_list=[
-                            GatewayStateDeviceConnectedEvent(
-                                device_serial='M2MR111100928'
-                            )]),
-                    GatewayStateEventSchema(),
-                    'on_gateway_state_event',
-                    'gateway_state',
-            ), (
-                    ErrorEvent(
-                        api_version='1.0',
-                        event_type=EventType.ERROR.value,
-                        event_id=str(uuid.uuid4()),
-                        time_created=int(time.time() * 1000),
-                        gateway_serial='PGGW000000042',
-                        device_serial='123456789',
-                        error_code='ERROR_UNKNOWN',
-                        event_reference_id=str(uuid.uuid4()),
-                        error_severity='CRITICAL'
-                    ),
-                    ErrorEventSchema(),
-                    'on_error',
-                    'error',
-            ), (
-                    ScannerStateEvent(
-                        api_version='1.0',
-                        event_type=EventType.SCANNER_STATE.value,
-                        event_id=str(uuid.uuid4()),
-                        time_created=int(time.time() * 1000),
-                        gateway_serial='PGGW000000042',
-                        device_serial='123456789',
-                        device_connected_state='STATE_CONNECTED'
-                    ),
-                    ScannerStateEventSchema(),
-                    'on_scanner_connected',
-                    'scanner_connected',
-            ), (
-                    ScannerStateEvent(
-                        api_version='1.0',
-                        event_type=EventType.SCANNER_STATE.value,
-                        event_id=str(uuid.uuid4()),
-                        time_created=int(time.time() * 1000),
-                        gateway_serial='PGGW000000042',
-                        device_serial='123456789',
-                        device_connected_state='STATE_DISCONNECTED'
-                    ),
-                    ScannerStateEventSchema(),
-                    'on_scanner_disconnected',
-                    'scanner_disconnected',
-            ), (
-                    ScanEvent(
-                        api_version='1.0',
-                        event_type=EventType.SCAN.value,
-                        event_id=str(uuid.uuid4()),
-                        time_created=int(time.time() * 1000),
-                        gateway_serial='PGGW000000042',
-                        device_serial='123456789',
-                        scan_code='foo bar baz'
-                    ),
-                    ScanEventSchema(),
-                    'on_scan',
-                    'scan'
+                ButtonPressedStream(
+                    api_version="1.0",
+                    event_id=str(uuid.uuid4()),
+                    time_created=int(time.time() * 1000),
+                    gateway_serial="PGGW000000042",
+                    device_serial="123456789",
+                    trigger_gesture="TRIGGER_DOUBLE_CLICK",
+                ),
+                "on_button_pressed",
+                "button_pressed",
+            ),
+            (
+                GatewayStateEventStream(
+                    api_version="1.0",
+                    event_id=str(uuid.uuid4()),
+                    time_created=int(time.time() * 1000),
+                    gateway_app_version="1.2.3",
+                    gateway_serial="PGGW000000042",
+                    device_connected_list=[
+                        DeviceConnectedListItem(device_serial="M2MR111100928")
+                    ],
+                ),
+                "on_gateway_state_event",
+                "gateway_state",
+            ),
+            (
+                ErrorsStream(
+                    api_version="1.0",
+                    event_id=str(uuid.uuid4()),
+                    time_created=int(time.time() * 1000),
+                    gateway_serial="PGGW000000042",
+                    device_serial="123456789",
+                    error_code="ERROR_UNKNOWN",
+                    event_reference_id=str(uuid.uuid4()),
+                    error_severity="CRITICAL",
+                ),
+                "on_error",
+                "error",
+            ),
+            (
+                ScannerStateStream(
+                    api_version="1.0",
+                    event_id=str(uuid.uuid4()),
+                    time_created=int(time.time() * 1000),
+                    gateway_serial="PGGW000000042",
+                    device_serial="123456789",
+                    device_connected_state="STATE_CONNECTED",
+                ),
+                "on_scanner_connected",
+                "scanner_connected",
+            ),
+            (
+                ScannerStateStream(
+                    api_version="1.0",
+                    event_id=str(uuid.uuid4()),
+                    time_created=int(time.time() * 1000),
+                    gateway_serial="PGGW000000042",
+                    device_serial="123456789",
+                    device_connected_state="STATE_DISCONNECTED",
+                ),
+                "on_scanner_disconnected",
+                "scanner_disconnected",
+            ),
+            (
+                ScanStream(
+                    api_version="1.0",
+                    event_id=str(uuid.uuid4()),
+                    time_created=int(time.time() * 1000),
+                    gateway_serial="PGGW000000042",
+                    device_serial="123456789",
+                    device_model=DeviceModel.m2_mr,
+                    scan_code="foo bar baz",
+                ),
+                "on_scan",
+                "scan",
             ),
         )
-    ]
+    ],
 )
-def test_events(model: StreamsAPIEvent,
-                schema: StreamsAPIEventSchema,
-                callback_name: str,
-                use_mock: bool):
+def test_events(
+    model: BaseModel,
+    callback_name: str,
+    use_mock: bool,
+):
     """Test all events."""
     master, slave = pty.openpty()
     slave_name = os.ttyname(slave)
@@ -159,7 +136,7 @@ def test_events(model: StreamsAPIEvent,
 
     testee.start(flush_input=False)
 
-    json_dict = schema.dumps(model)
+    json_dict = model.json(exclude_none=True)
 
     event = Event()
     if use_mock:
@@ -179,25 +156,25 @@ def test_events(model: StreamsAPIEvent,
 @pytest.mark.parametrize(
     "wrong_dict, use_mock",
     [
-        pytest.param(args[0], use_mock,  # pylint: disable=undefined-variable
-                     # pylint: disable=undefined-variable
-                     id=args[1]+'_%s' % ('mock' if use_mock else 'no_mock'))
+        pytest.param(
+            args[0],
+            use_mock,  # pylint: disable=undefined-variable
+            # pylint: disable=undefined-variable
+            id=args[1] + "_%s" % ("mock" if use_mock else "no_mock"),
+        )
         for args in (
-            ({'foo': 'bar'}, 'no_event'),
-            ({'event_type': 'foo'}, 'wrong_event'),
-            ({'event_type': 'button_pressed'}, 'wrong_button_pressed'),
-            ({'event_type': 'scan'}, 'wrong_scan'),
-            ({'event_type': 'scanner_state'}, 'wrong_scanner_state'),
-            ({'event_type': 'errors', 'foo': 'bar'},
-             'wrong_error'),
-            ({'event_type': 'gateway_state'}, 'wrong_gateway_state'),
+            ({"foo": "bar"}, "no_event"),
+            ({"event_type": "foo"}, "wrong_event"),
+            ({"event_type": "button_pressed"}, "wrong_button_pressed"),
+            ({"event_type": "scan"}, "wrong_scan"),
+            ({"event_type": "scanner_state"}, "wrong_scanner_state"),
+            ({"event_type": "errors", "foo": "bar"}, "wrong_error"),
+            ({"event_type": "gateway_state"}, "wrong_gateway_state"),
         )
         for use_mock in (True, False)
-    ]
+    ],
 )
-def test_wrong_event(
-        wrong_dict: Dict[str, Any],
-        use_mock: bool):
+def test_wrong_event(wrong_dict: Dict[str, Any], use_mock: bool):
     """Test wrong event."""
     master, slave = pty.openpty()
     slave_name = os.ttyname(slave)
@@ -205,7 +182,7 @@ def test_wrong_event(
     handler = GatewayMessageHandler()
     if use_mock:
         for field in handler.__dict__.copy():
-            if field.startswith('on_'):
+            if field.startswith("on_"):
                 setattr(handler, field, Mock())
 
     testee = Gateway(handler, port=slave_name)
@@ -220,7 +197,7 @@ def test_wrong_event(
 
     if use_mock:
         for field in handler.__dict__:
-            if field.startswith('on_'):
+            if field.startswith("on_"):
                 mock_fun: Mock = getattr(handler, field)
                 mock_fun.assert_not_called()
 
@@ -229,139 +206,125 @@ def test_wrong_event(
     "function_name, event_type, args, kwargs, expected_fields",
     [
         pytest.param(
-            'send_feedback',
-            'feedback!',
-            ('12345', 'FOO', ), {},
-            {
-                'device_serial': '12345',
-                'feedback_action_id': 'FOO',
-            },
-            id='send_feedback'),
-        pytest.param(
-            'set_display',
-            'display!',
+            "send_feedback",
+            "feedback!",
             (
-                    '12345',
-                    'FOOBAR',
-                    [
-                        {
-                            "display_field_id": 42,
-                            "display_field_header": "Just a test",
-                            "display_field_text": "R15"
-                        },
-                    ]),
+                "12345",
+                "FOO",
+            ),
+            {},
             {
-                'display_refresh_type': 'ABCDEF',
-                'time_validity_duration': 1234,
+                "device_serial": "12345",
+                "feedback_action_id": "FOO",
+            },
+            id="send_feedback",
+        ),
+        pytest.param(
+            "set_display",
+            "display!",
+            (
+                "12345",
+                "FOOBAR",
+                [
+                    {
+                        "display_field_id": 42,
+                        "display_field_header": "Just a test",
+                        "display_field_text": "R15",
+                    },
+                ],
+            ),
+            {
+                "display_refresh_type": "ABCDEF",
+                "time_validity_duration": 1234,
             },
             {
-                'device_serial': '12345',
-                'display_template_id': 'FOOBAR',
-                'display_refresh_type': 'ABCDEF',
+                "device_serial": "12345",
+                "display_template_id": "FOOBAR",
+                "display_refresh_type": "ABCDEF",
                 "display_fields": [
                     {
                         "display_field_id": 42,
                         "display_field_header": "Just a test",
-                        "display_field_text": "R15"
+                        "display_field_text": "R15",
                     },
                 ],
-                'time_validity_duration': 1234
+                "time_validity_duration": 1234,
             },
-            id='set_display'),
+            id="set_display",
+        ),
         pytest.param(
-            'set_display',
-            'display!',
+            "set_display",
+            "display!",
             (
-                    '12345',
-                    'FOOBAR',
-                    [
-                        {
-                            "display_field_id": 42,
-                            "display_field_header": "Just a test",
-                            "display_field_text": "R15"
-                        },
-                    ]),
+                "12345",
+                "FOOBAR",
+                [
+                    {
+                        "display_field_id": 42,
+                        "display_field_header": "Just a test",
+                        "display_field_text": "R15",
+                    },
+                ],
+            ),
             {
-                'display_refresh_type': 'ABCDEF',
+                "display_refresh_type": "ABCDEF",
             },
             {
-                'device_serial': '12345',
-                'display_template_id': 'FOOBAR',
-                'display_refresh_type': 'ABCDEF',
+                "device_serial": "12345",
+                "display_template_id": "FOOBAR",
+                "display_refresh_type": "ABCDEF",
                 "display_fields": [
                     {
                         "display_field_id": 42,
                         "display_field_header": "Just a test",
-                        "display_field_text": "R15"
+                        "display_field_text": "R15",
                     },
                 ],
             },
-            id='set_display_infinite'),
+            id="set_display_infinite",
+        ),
         pytest.param(
-            'set_trigger_block',
-            'trigger_block!',
-            (
-                    '12345',
-                    True,
-                    [
-                        'A', 'B', 'C'
-                    ],
-                    [
-                        'D', 'E', 'F'
-                    ]),
+            "set_trigger_block",
+            "trigger_block!",
+            ("12345", True, ["A", "B", "C"], ["D", "E", "F"]),
             {
-                'time_validity_duration': 1234,
+                "time_validity_duration": 1234,
             },
             {
-                'device_serial': '12345',
-                'trigger_block_gesture_list': [
-                    'A', 'B', 'C'
-                ],
-                'trigger_unblock_gesture_list': [
-                    'D', 'E', 'F'
-                ],
+                "device_serial": "12345",
+                "trigger_block_gesture_list": ["A", "B", "C"],
+                "trigger_unblock_gesture_list": ["D", "E", "F"],
                 "trigger_block_state": True,
-                'time_validity_duration': 1234
+                "time_validity_duration": 1234,
             },
-            id='set_trigger_block'),
+            id="set_trigger_block",
+        ),
         pytest.param(
-            'set_trigger_block',
-            'trigger_block!',
-            (
-                    '12345',
-                    True,
-                    [
-                        'A', 'B', 'C'
-                    ],
-                    [
-                        'D', 'E', 'F'
-                    ]),
+            "set_trigger_block",
+            "trigger_block!",
+            ("12345", True, ["A", "B", "C"], ["D", "E", "F"]),
             {},
             {
-                'device_serial': '12345',
-                'trigger_block_gesture_list': [
-                    'A', 'B', 'C'
-                ],
-                'trigger_unblock_gesture_list': [
-                    'D', 'E', 'F'
-                ],
+                "device_serial": "12345",
+                "trigger_block_gesture_list": ["A", "B", "C"],
+                "trigger_unblock_gesture_list": ["D", "E", "F"],
                 "trigger_block_state": True,
             },
-            id='set_trigger_block_infinite'),
+            id="set_trigger_block_infinite",
+        ),
         pytest.param(
-            'get_gateway_state',
-            'gateway_state!',
-            (), {},
-            {},
-            id='get_gateway_state'),
-    ]
+            "get_gateway_state", "gateway_state!", (), {}, {}, id="get_gateway_state"
+        ),
+    ],
 )
 # pylint: disable=too-many-locals
-def test_commands(function_name: str,
-                  event_type: str,
-                  args: Any,
-                  kwargs: Dict[str, Any],
-                  expected_fields: Dict[str, Any]):
+def test_commands(
+    function_name: str,
+    event_type: str,
+    args: Any,
+    kwargs: Dict[str, Any],
+    expected_fields: Dict[str, Any],
+):
     """Test all commands."""
     master, slave = pty.openpty()
     slave_name = os.ttyname(slave)
@@ -372,11 +335,12 @@ def test_commands(function_name: str,
 
     testee.start(flush_input=False)
 
-    with patch('proglove_streams.gateway.time.time') as time_patch, \
-            patch('proglove_streams.gateway.uuid.uuid4') as uuid4_patch:
+    with patch("proglove_streams.gateway.time.time") as time_patch, patch(
+        "proglove_streams.gateway.uuid.uuid4"
+    ) as uuid4_patch:
         time_created = 1546300800000
-        event_id = 'c6fd7137-055a-4feb-8c32-9dbb9a117f6a'
-        time_patch.return_value = time_created / 1000.
+        event_id = "c6fd7137-055a-4feb-8c32-9dbb9a117f6a"
+        time_patch.return_value = time_created / 1000.0
         uuid4_patch.return_value = event_id
         getattr(testee, function_name)(*args, **kwargs)
 
@@ -396,7 +360,7 @@ def test_commands(function_name: str,
 
 def test_exceptions():
     """Test the exceptions."""
-    testee = Gateway(Mock(), port='port_that_does_not_exist')
+    testee = Gateway(Mock(), port="port_that_does_not_exist")
 
     with pytest.raises(ProgloveStreamsException):
         testee.start(flush_input=False)
@@ -424,8 +388,8 @@ def test_thread_error():
     # pylint: disable=protected-access
     testee._serial.close()
     # pylint: disable=protected-access
-    testee._input_thread.join(timeout=1)
     with pytest.raises(ProgloveStreamsException):
+        testee._input_thread.join(timeout=1)
         testee.get_gateway_state()
 
     testee.start(flush_input=False)
@@ -456,6 +420,6 @@ def test_malformed_json():
 
     testee.start(flush_input=False)
 
-    os.write(master, b'{')
+    os.write(master, b"{")
 
     testee.stop()
