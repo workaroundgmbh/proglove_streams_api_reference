@@ -1,16 +1,15 @@
 """Logging abstraction to facade systemd journal."""
-import sys
 import logging
+import sys
 
 from colorlog import ColoredFormatter
 
+FORMATTER = ColoredFormatter(
+    "[%(asctime)s]" + " %(log_color)s%(message)s%(reset)s", datefmt="%H:%M:%S"
+)
 
-FORMATTER = ColoredFormatter('[%(asctime)s]' +
-                             ' %(log_color)s%(message)s%(reset)s',
-                             datefmt='%H:%M:%S')
 
-
-def init_logging(logging_level: int = logging.DEBUG):
+def init_logging(logging_level: int = logging.DEBUG) -> None:
     """Initialize the logging."""
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(FORMATTER)
